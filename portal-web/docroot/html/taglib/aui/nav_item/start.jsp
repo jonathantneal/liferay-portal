@@ -36,11 +36,24 @@
 	</c:if>
 
 	<c:if test="<%= dropdown %>">
-		<aui:script use="aui-base">
+		<aui:script use="aui-base,event-outside">
 			A.one('#<%= id %>').on(
 				'click',
 				function(event) {
-					event.currentTarget.toggleClass('open');
+					var currentTarget = event.currentTarget;
+
+					if (currentTarget.hasClass('open')) {
+						currentTarget.removeClass('open');
+					} else {
+						currentTarget.addClass('open');
+
+						currentTarget.once(
+							'clickoutside',
+							function(event) {
+								currentTarget.removeClass('open');
+							}
+						);
+					}
 				}
 			);
 		</aui:script>
