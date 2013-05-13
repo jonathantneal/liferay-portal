@@ -92,7 +92,7 @@ AUI.add(
 						if (navBlock) {
 							instance._updateURL = themeDisplay.getPathMain() + '/layouts_admin/update_page?p_auth=' + Liferay.authToken;
 
-							var items = navBlock.all('> ul > li');
+							var items = navBlock.all('ul > li');
 							var layoutIds = instance.get('layoutIds');
 
 							var cssClassBuffer = [];
@@ -241,7 +241,7 @@ AUI.add(
 						if (instance.get('isModifiable')) {
 							var navBlock = instance.get('navBlock');
 
-							var navItems = navBlock.all('> ul > li').filter(
+							var navItems = navBlock.all('ul > li').filter(
 								function(item, index, collection) {
 									return !item.hasClass('selected');
 								}
@@ -256,7 +256,7 @@ AUI.add(
 							navBlock.delegate(
 								'keydown',
 								A.bind('_handleKeyDown', instance),
-								'> ul > li a'
+								'ul > li a'
 							);
 
 							navBlock.delegate(

@@ -28,7 +28,7 @@ AUI.add(
 						var instance = this;
 
 						var host = instance.get('host');
-						var navigation = host.one('> ul');
+						var navigation = host.one('ul');
 
 						var hostULId = '#' + navigation.guid();
 
