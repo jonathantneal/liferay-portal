@@ -843,6 +843,7 @@ public class JournalArticleLocalServiceImpl
 		newArticle.setUserName(user.getFullName());
 		newArticle.setCreateDate(now);
 		newArticle.setModifiedDate(now);
+		newArticle.setFolderId(oldArticle.getFolderId());
 		newArticle.setArticleId(newArticleId);
 		newArticle.setVersion(JournalArticleConstants.VERSION_DEFAULT);
 		newArticle.setTitle(oldArticle.getTitle());
@@ -1844,7 +1845,9 @@ public class JournalArticleLocalServiceImpl
 			}
 		}
 
-		if (article.getDisplayDate().after(now)) {
+		Date displayDate = article.getDisplayDate();
+
+		if (displayDate.after(now)) {
 			return null;
 		}
 
@@ -2402,9 +2405,10 @@ public class JournalArticleLocalServiceImpl
 		for (int i = 0; i < articles.size(); i++) {
 			JournalArticle article = articles.get(i);
 
+			Date displayDate = article.getDisplayDate();
 			Date expirationDate = article.getExpirationDate();
 
-			if (article.getDisplayDate().before(now) &&
+			if (((displayDate == null) || displayDate.before(now)) &&
 				((expirationDate == null) || expirationDate.after(now))) {
 
 				return article;
@@ -2448,9 +2452,10 @@ public class JournalArticleLocalServiceImpl
 		Date now = new Date();
 
 		for (JournalArticle article : articles) {
+			Date displayDate = article.getDisplayDate();
 			Date expirationDate = article.getExpirationDate();
 
-			if (article.getDisplayDate().before(now) &&
+			if (displayDate.before(now) &&
 				((expirationDate == null) || expirationDate.after(now))) {
 
 				return article;

@@ -1,3 +1,5 @@
+alter table Address add uuid_ VARCHAR(75) null;
+
 update BlogsEntry set status = 2 where status = 9;
 
 alter table BookmarksEntry add status INTEGER;
@@ -23,6 +25,23 @@ update BookmarksFolder set status = 0;
 update BookmarksFolder set statusByUserId = userId;
 update BookmarksFolder set statusByUserName = userName;
 update BookmarksFolder set statusDate = modifiedDate;
+
+create table BTEntry (
+	btEntryId LONG not null primary key,
+	groupId LONG,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	name VARCHAR(75) null,
+	servletContextNames VARCHAR(255) null,
+	taskExecutorClassName VARCHAR(200) null,
+	taskContext TEXT null,
+	completed BOOLEAN,
+	completionDate DATE null,
+	status INTEGER
+);
 
 alter table Contact_ add classNameId LONG;
 alter table Contact_ add classPK LONG;
@@ -283,6 +302,8 @@ insert into Country (countryId, name, a2, a3, number_, idd_, zipRequired, active
 
 alter table DDMStructure add parentStructureId LONG;
 
+drop index IX_490E7A1E on DDMStructure;
+
 alter table DDMTemplate add cacheable BOOLEAN;
 alter table DDMTemplate add smallImage BOOLEAN;
 alter table DDMTemplate add smallImageId LONG;
@@ -323,6 +344,8 @@ update DLFolder set status = 0;
 update DLFolder set statusByUserId = userId;
 update DLFolder set statusByUserName = userName;
 update DLFolder set statusDate = modifiedDate;
+
+alter table EmailAddress add uuid_ VARCHAR(75) null;
 
 alter table ExpandoRow add modifiedDate DATE null;
 
@@ -439,6 +462,8 @@ drop index IX_ED7CF243 on PasswordPolicyRel;
 
 drop table Permission_;
 
+alter table Phone add uuid_ VARCHAR(75) null;
+
 alter table PollsChoice add groupId LONG;
 alter table PollsChoice add companyId LONG;
 alter table PollsChoice add userId LONG;
@@ -529,6 +554,8 @@ alter table UserGroup add createDate DATE null;
 alter table UserGroup add modifiedDate DATE null;
 
 drop table Users_Permissions;
+
+alter table Website add uuid_ VARCHAR(75) null;
 
 alter table WikiNode add status INTEGER;
 alter table WikiNode add statusByUserId LONG;

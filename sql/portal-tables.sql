@@ -18,6 +18,7 @@ create table Account_ (
 );
 
 create table Address (
+	uuid_ VARCHAR(75) null,
 	addressId LONG not null primary key,
 	companyId LONG,
 	userId LONG,
@@ -203,6 +204,23 @@ create table AssetVocabulary (
 	title STRING null,
 	description STRING null,
 	settings_ STRING null
+);
+
+create table BTEntry (
+	btEntryId LONG not null primary key,
+	groupId LONG,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	name VARCHAR(75) null,
+	servletContextNames VARCHAR(255) null,
+	taskExecutorClassName VARCHAR(200) null,
+	taskContext TEXT null,
+	completed BOOLEAN,
+	completionDate DATE null,
+	status INTEGER
 );
 
 create table BlogsEntry (
@@ -690,6 +708,7 @@ create table DLFolder (
 );
 
 create table EmailAddress (
+	uuid_ VARCHAR(75) null,
 	emailAddressId LONG not null primary key,
 	companyId LONG,
 	userId LONG,
@@ -1436,6 +1455,7 @@ create table PasswordTracker (
 );
 
 create table Phone (
+	uuid_ VARCHAR(75) null,
 	phoneId LONG not null primary key,
 	companyId LONG,
 	userId LONG,
@@ -2260,6 +2280,7 @@ create table WebDAVProps (
 );
 
 create table Website (
+	uuid_ VARCHAR(75) null,
 	websiteId LONG not null primary key,
 	companyId LONG,
 	userId LONG,

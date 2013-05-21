@@ -71,6 +71,7 @@ import com.liferay.portal.service.GroupLocalServiceUtil;
 import com.liferay.portal.service.ImageLocalServiceUtil;
 import com.liferay.portal.service.LayoutLocalServiceUtil;
 import com.liferay.portal.service.LayoutSetLocalServiceUtil;
+import com.liferay.portal.service.PortletLocalServiceUtil;
 import com.liferay.portal.service.RoleLocalServiceUtil;
 import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.ServiceContextFactory;
@@ -385,6 +386,26 @@ public class ServicePreAction extends Action {
 
 				controlPanelCategory =
 					_CONTROL_PANEL_CATEGORY_PORTLET_PREFIX + ppid;
+			}
+			else if (Validator.isNotNull(ppid)) {
+				Portlet portlet = PortletLocalServiceUtil.getPortletById(
+					companyId, ppid);
+
+				String portletControlPanelEntryCategory =
+					portlet.getControlPanelEntryCategory();
+
+				if (!controlPanelCategory.equals(
+						PortletCategoryKeys.CURRENT_SITE) &&
+					portletControlPanelEntryCategory.startsWith(
+						PortletCategoryKeys.SITE_ADMINISTRATION)) {
+
+					portletControlPanelEntryCategory =
+						PortletCategoryKeys.SITES;
+				}
+
+				if (Validator.isNotNull(portletControlPanelEntryCategory)) {
+					controlPanelCategory = portletControlPanelEntryCategory;
+				}
 			}
 
 			boolean viewableGroup = LayoutPermissionUtil.contains(
@@ -777,7 +798,7 @@ public class ServicePreAction extends Action {
 		themeDisplay.setShowSignInIcon(!signedIn);
 		themeDisplay.setShowSignOutIcon(signedIn);
 
-		boolean showManageSiteIcon = false;
+		boolean showSiteAdministrationIcon = false;
 
 		long controlPanelPlid = 0;
 
@@ -788,13 +809,13 @@ public class ServicePreAction extends Action {
 				PortalUtil.getControlPanelPortlets(
 					PortletCategoryKeys.SITE_ADMINISTRATION, themeDisplay);
 
-			showManageSiteIcon =
+			showSiteAdministrationIcon =
 				PortletPermissionUtil.hasControlPanelAccessPermission(
 					permissionChecker, scopeGroupId,
 					siteAdministrationPortlets);
 		}
 
-		themeDisplay.setShowManageSiteIcon(showManageSiteIcon);
+		themeDisplay.setShowSiteAdministrationIcon(showSiteAdministrationIcon);
 
 		themeDisplay.setShowStagingIcon(false);
 
@@ -815,11 +836,6 @@ public class ServicePreAction extends Action {
 		if (Validator.isNotNull(doAsUserId)) {
 			urlControlPanel = HttpUtil.addParameter(
 				urlControlPanel, "doAsUserId", doAsUserId);
-		}
-
-		if (scopeGroupId > 0) {
-			urlControlPanel = HttpUtil.addParameter(
-				urlControlPanel, "doAsGroupId", scopeGroupId);
 		}
 
 		if (refererGroupId > 0) {
@@ -863,15 +879,15 @@ public class ServicePreAction extends Action {
 
 		themeDisplay.setURLHome(urlHome);
 
-		String manageSiteURL = urlControlPanel;
+		String siteAdministrationURL = urlControlPanel;
 
-		manageSiteURL = HttpUtil.addParameter(
-			manageSiteURL, "controlPanelCategory",
+		siteAdministrationURL = HttpUtil.addParameter(
+			siteAdministrationURL, "controlPanelCategory",
 			PortletCategoryKeys.CURRENT_SITE);
-		manageSiteURL = HttpUtil.addParameter(
-			manageSiteURL, "doAsGroupId", siteGroupId);
+		siteAdministrationURL = HttpUtil.addParameter(
+			siteAdministrationURL, "doAsGroupId", siteGroupId);
 
-		themeDisplay.setURLManageSite(manageSiteURL);
+		themeDisplay.setURLSiteAdministration(siteAdministrationURL);
 
 		if (layout != null) {
 			if (layout.isTypePortlet()) {
@@ -1191,7 +1207,6 @@ public class ServicePreAction extends Action {
 		if (group.isLayoutPrototype()) {
 			themeDisplay.setShowControlPanelIcon(false);
 			themeDisplay.setShowHomeIcon(false);
-			themeDisplay.setShowManageSiteIcon(false);
 			themeDisplay.setShowManageSiteMembershipsIcon(false);
 			themeDisplay.setShowMyAccountIcon(false);
 			themeDisplay.setShowPageCustomizationIcon(false);
@@ -1199,6 +1214,7 @@ public class ServicePreAction extends Action {
 			themeDisplay.setShowPortalIcon(false);
 			themeDisplay.setShowSignInIcon(false);
 			themeDisplay.setShowSignOutIcon(false);
+			themeDisplay.setShowSiteAdministrationIcon(false);
 			themeDisplay.setShowSiteSettingsIcon(false);
 			themeDisplay.setShowStagingIcon(false);
 		}
@@ -1210,9 +1226,9 @@ public class ServicePreAction extends Action {
 
 		if (group.hasStagingGroup() && !group.isStagingGroup()) {
 			themeDisplay.setShowLayoutTemplatesIcon(false);
-			themeDisplay.setShowManageSiteIcon(false);
 			themeDisplay.setShowPageCustomizationIcon(false);
 			themeDisplay.setShowPageSettingsIcon(false);
+			themeDisplay.setShowSiteAdministrationIcon(false);
 			themeDisplay.setShowSiteMapSettingsIcon(false);
 			themeDisplay.setShowSiteSettingsIcon(false);
 		}
@@ -1580,13 +1596,46 @@ public class ServicePreAction extends Action {
 					layoutSet.getGroupId(), layoutSet.isPrivateLayout(),
 					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID);
 
-				if (layouts.size() > 0) {
+				Group group = null;
+
+				if (!layouts.isEmpty()) {
 					layout = layouts.get(0);
+
+					group = layout.getGroup();
+				}
+
+				if ((layout != null) && layout.isPrivateLayout()) {
+					layouts = LayoutLocalServiceUtil.getLayouts(
+						group.getGroupId(), false,
+						LayoutConstants.DEFAULT_PARENT_LAYOUT_ID);
+
+					if (!layouts.isEmpty()) {
+						layout = layouts.get(0);
+					}
+					else {
+						group = null;
+						layout = null;
+					}
+				}
+
+				if ((group != null) && group.isStagingGroup()) {
+					Group liveGroup = group.getLiveGroup();
+
+					layouts = LayoutLocalServiceUtil.getLayouts(
+						liveGroup.getGroupId(), false,
+						LayoutConstants.DEFAULT_PARENT_LAYOUT_ID);
+
+					if (!layouts.isEmpty()) {
+						layout = layouts.get(0);
+					}
+					else {
+						layout = null;
+					}
 				}
 			}
 		}
 
-		if ((layout == null) || layout.isPrivateLayout()) {
+		if (layout == null) {
 
 			// Check the Guest site
 

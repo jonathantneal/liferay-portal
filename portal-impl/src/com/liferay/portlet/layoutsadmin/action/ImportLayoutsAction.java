@@ -20,12 +20,14 @@ import com.liferay.portal.LARTypeException;
 import com.liferay.portal.LayoutImportException;
 import com.liferay.portal.LayoutPrototypeException;
 import com.liferay.portal.LocaleException;
+import com.liferay.portal.MissingReferenceException;
 import com.liferay.portal.NoSuchGroupException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.lar.MissingReference;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -63,7 +65,10 @@ import com.liferay.portlet.sites.action.ActionUtil;
 import java.io.File;
 import java.io.InputStream;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
@@ -167,7 +172,7 @@ public class ImportLayoutsAction extends EditFileEntryAction {
 		}
 
 		return mapping.findForward(
-			getForward(renderRequest, "portlet.layouts_admin.export_layouts"));
+			getForward(renderRequest, "portlet.layouts_admin.import_layouts"));
 	}
 
 	@Override
@@ -180,7 +185,7 @@ public class ImportLayoutsAction extends EditFileEntryAction {
 
 		PortletRequestDispatcher portletRequestDispatcher =
 			portletContext.getRequestDispatcher(
-				"/html/portlet/layouts_admin/export_import_resources.jsp");
+				"/html/portlet/layouts_admin/import_layouts_resources.jsp");
 
 		portletRequestDispatcher.include(resourceRequest, resourceResponse);
 	}
@@ -322,7 +327,8 @@ public class ImportLayoutsAction extends EditFileEntryAction {
 			e instanceof LARFileSizeException ||
 			e instanceof LARTypeException ||
 			e instanceof LayoutPrototypeException ||
-			e instanceof LocaleException) {
+			e instanceof LocaleException ||
+			e instanceof MissingReferenceException) {
 
 			if (e instanceof DuplicateFileException) {
 				errorMessage = themeDisplay.translate(
@@ -439,6 +445,78 @@ public class ImportLayoutsAction extends EditFileEntryAction {
 					});
 				errorType = ServletResponseConstants.SC_FILE_CUSTOM_EXCEPTION;
 			}
+			else if (e instanceof MissingReferenceException) {
+				MissingReferenceException mre = (MissingReferenceException)e;
+
+				StringBundler sb = new StringBundler(4);
+
+				sb.append("the-lar-file-could-not-be-imported-because-there-");
+				sb.append("are-missing-references-that-could-not-be-found-in-");
+				sb.append("the-current-site.-please-import-another-lar-file");
+				sb.append("-containing-the-following-elements");
+
+				errorMessage = themeDisplay.translate(sb.toString());
+
+				errorMessageJSONArray = JSONFactoryUtil.createJSONArray();
+
+				Map<String, MissingReference> missingReferences =
+					mre.getMissingReferences();
+
+				for (String missingReferenceDisplayName :
+						missingReferences.keySet()) {
+
+					MissingReference missingReference = missingReferences.get(
+						missingReferenceDisplayName);
+
+					JSONObject errorMessageJSONObject =
+						JSONFactoryUtil.createJSONObject();
+
+					Map<String, String> referrers =
+						missingReference.getReferrers();
+
+					if (referrers.size() == 1) {
+						Set<Map.Entry<String, String>> referrerDisplayNames =
+							referrers.entrySet();
+
+						Iterator<Map.Entry<String, String>> iterator =
+							referrerDisplayNames.iterator();
+
+						Map.Entry<String, String> entry = iterator.next();
+
+						String referrerDisplayName = entry.getKey();
+						String referrerClasName = entry.getValue();
+
+						errorMessageJSONObject.put(
+							"info",
+							themeDisplay.translate(
+								"referenced-by-a-x-x",
+								new String[] {
+									ResourceActionsUtil.getModelResource(
+										themeDisplay.getLocale(),
+										referrerClasName), referrerDisplayName
+								}
+							));
+					}
+					else {
+						errorMessageJSONObject.put(
+							"info",
+							themeDisplay.translate(
+								"referenced-by-x-elements", referrers.size()));
+					}
+
+					errorMessageJSONObject.put(
+						"name", missingReferenceDisplayName);
+					errorMessageJSONObject.put(
+						"type",
+						ResourceActionsUtil.getModelResource(
+							themeDisplay.getLocale(),
+							missingReference.getClassName()));
+
+					errorMessageJSONArray.put(errorMessageJSONObject);
+				}
+
+				errorType = ServletResponseConstants.SC_FILE_CUSTOM_EXCEPTION;
+			}
 		}
 		else {
 			errorType = ServletResponseConstants.SC_FILE_CUSTOM_EXCEPTION;
@@ -507,6 +585,8 @@ public class ImportLayoutsAction extends EditFileEntryAction {
 			LayoutServiceUtil.importLayouts(
 				groupId, privateLayout, actionRequest.getParameterMap(),
 				newFile);
+
+			deleteTempFileEntry(groupId);
 
 			addSuccessMessage(actionRequest, actionResponse);
 		}
